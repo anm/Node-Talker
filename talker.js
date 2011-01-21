@@ -4,7 +4,7 @@ var config = {
             },
     talker: {name: "Node"}
 };
-    
+
 /* Remove trailing whitespace */
 var chomp = function (s) {
     return /^(.*?)\s*$/.exec(s)[1];
@@ -17,6 +17,15 @@ Users.prototype.all = function () {
 Users.prototype.forConn = function (conn) {
     for (i = 0; i < this.list.length; ++i) {
         if (this.list[i].conn === conn) {
+            return this.list[i];
+        }
+    }
+    return null;
+};
+
+Users.prototype.forName = function (name) {
+    for (i = 0; i < this.list.length; ++i) {
+        if (this.list[i].name === name) {
             return this.list[i];
         }
     }
@@ -86,7 +95,13 @@ var modes = {
         },
 
         parse: function (user, input) {
-            user.name = chomp(input);
+            var name = chomp(input);
+            if (users.forName(name)) {
+                user.println("Name in use.");
+                modes.login.load(user);
+                return 1;
+            }
+            user.name = name;
             console.log(logID(user) + ' connected');
             user.addMode(modes.talk);
             user.println("Welcome to " + config.talker.name + ", " + user.name);
