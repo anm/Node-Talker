@@ -1,3 +1,10 @@
+var config = {
+    listen: {host: 'localhost',
+             port: 5555
+            }
+};
+    
+/* Remove trailing whitespace */
 var chomp = function (s) {
     return /^(.*?)\s*$/.exec(s)[1];
 };
@@ -8,17 +15,91 @@ var net = require('net');
 var server = net.createServer(function (client) {
     // Client is a Stream
 
-    // Decodes the data Buffer provided by the data event to a utf8
+    // Decode the data Buffer provided by the data event to a utf8
     // string
     client.setEncoding('utf8');
 
     client.write("User Name: ");
-    client.on('data', newName);
+    client.on('data', dataHandler);
     client.on('close', removeClient);
     client.on('end', endStream);
     // timeout event to handle as well
 });
 
+function User(conn) {
+    this.conn = conn;
+    this.modes = [];
+}
+
+var modes = {
+    login: {
+        parse: function (user, input) {
+            user.name = chomp(input);
+            console.log(user.name + '@' + user.conn.remoteAddress + ' connected');
+            user.modes.push(modes.talk);
+            return -1;
+        }
+    },
+
+    talk: {
+        parse: function (user, input) {
+            input = chomp(input);
+            modes.talk.say(user, input);
+            return 1;
+        },
+        
+        say: function (user, msg) {
+            var out = user.name + ': ' + msg;
+            wall(out);
+        }
+    }
+};
+
+function wall(msg) {
+    var other;
+    for (other in users) {
+        users[other].conn.write(msg + "\n");
+    }
+}
+
+function dataHandler (input) {
+    var conn = this;
+    var user = userForConn(conn);
+    if (user === null) {
+        user = new User(conn);
+        user.modes.push(modes.login);
+        users.push(user);
+    }
+
+    var i;
+    var status;
+    for (i = user.modes.length - 1; i >= 0; --i) {
+        status = user.modes[i].parse(user, input);
+        switch (status) {
+        case -1:
+            // Remove handler and stop
+            // TODO: remove
+            user.modes.splice(i, 1);
+            return;
+            break;
+        case 0:
+            // Defer
+            break;
+        case 1:
+            // Done
+            return;
+            break;
+        }
+    }
+
+    throw new Error("No mode would handle the user input");
+}
+
+function newName (name) {
+    this.removeListener('data', newName);
+    this.on('data', say);
+}
+   
 function endStream() {
     this.end();
 }
@@ -47,28 +128,7 @@ function userForConn (conn) {
     return null;
 }
 
-function newName (name) {
-    name = chomp(name);
-    users.push({name: name, conn:this});
-    console.log(name + '@' + this.remoteAddress + ' connected');
-    this.removeListener('data', newName);
-    this.on('data', say);
-}
-
-function say (msg) {
-    var user = userForConn(this).name;
-    var out = user + ': ' + msg;
-    wall(out);
-}
-
-function wall(msg) {
-    var other;
-    for (other in users) {
-        console.log(other);
-        users[other].conn.write(msg);
-    }
-}
-
 server.on('error', function (e) {console.err(e)});
 
-server.listen(5555, 'localhost', function () {console.log("Listening")});
+server.listen(config.listen.port, config.listen.host, function () {
+    console.log("Listening on " + config.listen.host + " " + config.listen.port)});
