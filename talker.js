@@ -10,7 +10,41 @@ var chomp = function (s) {
     return /^(.*?)\s*$/.exec(s)[1];
 };
 
-var users = [];
+Users.prototype.all = function () {
+    return this.list;
+};
+
+Users.prototype.forConn = function (conn) {
+    for (i = 0; i < this.list.length; ++i) {
+        if (this.list[i].conn === conn) {
+            return this.list[i];
+        }
+    }
+    return null;
+};
+
+Users.prototype.add = function (user) {
+    this.list.push(user);
+};
+
+Users.prototype.remove = function (conn) {
+    var i;
+    for (i = 0; i < this.list.length; ++i) {
+        if (this.list[i].conn === conn) {
+            var name = this.list[i].name;
+            this.list.splice(i, 1);
+            wall(name + " disconnected");
+            return;
+        }
+    }
+    console.log("Disconnected stream not associated with any user");
+};
+
+function Users () {
+    this.list = [];
+}
+
+var users = new Users();
 
 var net = require('net');
 var server = net.createServer(function (client) {
@@ -22,7 +56,7 @@ var server = net.createServer(function (client) {
 
     var user = new User(client);
     user.addMode(modes.login);
-    users.push(user);
+    users.add(user);
 
     client.on('data', dataHandler);
     client.on('close', removeClient);
@@ -53,7 +87,7 @@ var modes = {
 
         parse: function (user, input) {
             user.name = chomp(input);
-            console.log(user.name + '@' + user.conn.remoteAddress + ' connected');
+            console.log(logID(user) + ' connected');
             user.addMode(modes.talk);
             user.println("Welcome to " + config.talker.name + ", " + user.name);
             return -1;
@@ -76,16 +110,19 @@ var modes = {
     }
 };
 
+
+
 function wall(msg) {
     var other;
-    for (other in users) {
-        users[other].println(msg);
+    var ul = users.all();
+    for (other in ul) {
+        ul[other].println(msg);
     }
 }
 
 function dataHandler (input) {
     var conn = this;
-    var user = userForConn(conn);
+    var user = users.forConn(conn);
 
     var i;
     var status;
@@ -111,32 +148,18 @@ function dataHandler (input) {
     throw new Error("No mode would handle the user input");
 }
 
+function logID (user) {
+    return user.name + '@' + user.conn.remoteAddress + ":" + user.conn.remotePort;
+}
+
 function endStream() {
     this.end();
 }
 
 function removeClient() {
     var conn = this;
-    console.log("Disconnected: " + this.remoteAddress);
-    var i;
-    for (i = 0; i < users.length; ++i) {
-        if (users[i].conn === conn) {
-            var name = users[i].name;
-            users.splice(i, 1);
-            wall(name + " disconnected");
-            return;
-        }
-    }
-    console.log("Disconnected stream not associated with any user");
-}
-
-function userForConn (conn) {
-    for (i = 0; i < users.length; ++i) {
-        if (users[i].conn === conn) {
-            return users[i];
-        }
-    }
-    return null;
+    console.log("Disconnected: " + logID(user));
+    users.remove(conn);
 }
 
 server.on('error', function (e) {console.err(e)});
