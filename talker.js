@@ -1,7 +1,8 @@
 var config = {
     listen: {host: 'localhost',
              port: 5555
-            }
+            },
+    talker: {name: "Node"}
 };
     
 /* Remove trailing whitespace */
@@ -19,13 +20,26 @@ var server = net.createServer(function (client) {
     // string
     client.setEncoding('utf8');
 
-    client.write("User Name: ");
+    var user = new User(client);
+    user.addMode(modes.login);
+    users.push(user);
+
     client.on('data', dataHandler);
     client.on('close', removeClient);
     client.on('end', endStream);
     // timeout event to handle as well
 });
 
+User.prototype.addMode = function (mode) {
+    this.modes.push(mode);
+    mode.load(this);
+};
+User.prototype.print = function (msg) {
+    this.conn.write(msg);
+};
+User.prototype.println = function (msg) {
+    this.conn.write(msg + "\n");
+};
 function User(conn) {
     this.conn = conn;
     this.modes = [];
@@ -33,21 +47,28 @@ function User(conn) {
 
 var modes = {
     login: {
+        load: function (user) {
+            user.print("User Name: ");
+        },
+
         parse: function (user, input) {
             user.name = chomp(input);
             console.log(user.name + '@' + user.conn.remoteAddress + ' connected');
-            user.modes.push(modes.talk);
+            user.addMode(modes.talk);
+            user.println("Welcome to " + config.talker.name + ", " + user.name);
             return -1;
         }
     },
 
     talk: {
+        load: function () {},
+
         parse: function (user, input) {
             input = chomp(input);
             modes.talk.say(user, input);
             return 1;
         },
-        
+
         say: function (user, msg) {
             var out = user.name + ': ' + msg;
             wall(out);
@@ -58,18 +79,13 @@ var modes = {
 function wall(msg) {
     var other;
     for (other in users) {
-        users[other].conn.write(msg + "\n");
+        users[other].println(msg);
     }
 }
 
 function dataHandler (input) {
     var conn = this;
     var user = userForConn(conn);
-    if (user === null) {
-        user = new User(conn);
-        user.modes.push(modes.login);
-        users.push(user);
-    }
 
     var i;
     var status;
@@ -95,11 +111,6 @@ function dataHandler (input) {
     throw new Error("No mode would handle the user input");
 }
 
-function newName (name) {
-    this.removeListener('data', newName);
-    this.on('data', say);
-}
-   
 function endStream() {
     this.end();
 }
