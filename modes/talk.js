@@ -24,7 +24,13 @@ function say (user, msg) {
 }
 
 function tell (user, target, msg) {
-    var out = user.name + " tells you: " + msg;
+    var out;
+    if (user === target) {
+        out = msg + ", you tell yourself";
+    } else {
+        user.name + " tells you: " + msg;
+    }
+
     target.println(out);
 }
 
@@ -57,6 +63,7 @@ function parse (user, input) {
             var target = users.forName(p.target);
             if (!target) {
                 user.err("no such user");
+                return 1;
             }
             tell(user, target, p.rest);
         } else {
