@@ -1,5 +1,5 @@
 var config = {
-    listen: {host: 'localhost',
+    listen: {host: undefined, // undefined to listen on all addresses
              port: 5555
             },
     talker: {name: "Node"}
