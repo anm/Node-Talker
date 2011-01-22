@@ -47,6 +47,9 @@ User.prototype.addMode = function (mode) {
 User.prototype.print = function (msg) {
     this.conn.write(msg);
 };
+User.prototype.err = function (msg) {
+    this.print("> " + msg);
+};
 User.prototype.println = function (msg) {
     this.conn.write(msg + "\n");
 };
