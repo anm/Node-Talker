@@ -1,63 +1,30 @@
+require.paths.push('lib');
+require.paths.push('modes');
+
+var util = require('util.js');
+var UsersModule = require('Users.js');
+var net = require('net');
+
+global.users = new UsersModule.Users();
+
 var config = {
+    talker: {name: "Node"},
     listen: {host: undefined, // undefined to listen on all addresses
              port: 5555
             },
-    talker: {name: "Node"}
-};
 
-/* Remove trailing whitespace */
-var chomp = function (s) {
-    return /^(.*?)\s*$/.exec(s)[1];
-};
+    /* Modes that will be loaded for every user on login */
+    defaultModes: [],
 
-Users.prototype.all = function () {
-    return this.list;
-};
-
-Users.prototype.forConn = function (conn) {
-    for (i = 0; i < this.list.length; ++i) {
-        if (this.list[i].conn === conn) {
-            return this.list[i];
-        }
+    /* Modes which may be started by the user. The key is the command
+     * to start the mode. */
+    userModes: {
+        //fortune: require('modes/fortune.js')
     }
-    return null;
 };
 
-Users.prototype.forName = function (name) {
-    for (i = 0; i < this.list.length; ++i) {
-        if (this.list[i].name === name) {
-            return this.list[i];
-        }
-    }
-    return null;
-};
-
-Users.prototype.add = function (user) {
-    this.list.push(user);
-};
-
-Users.prototype.remove = function (conn) {
-    var i;
-    for (i = 0; i < this.list.length; ++i) {
-        if (this.list[i].conn === conn) {
-            var name = this.list[i].name;
-            this.list.splice(i, 1);
-            wall(name + " disconnected");
-            return;
-        }
-    }
-    console.log("Disconnected stream not associated with any user");
-};
-
-function Users () {
-    this.list = [];
-}
-
-var users = new Users();
-
-var net = require('net');
 var server = net.createServer(function (client) {
-    // Client is a Stream
+    // Client is a Stream object
 
     // Decode the data Buffer provided by the data event to a utf8
     // string
@@ -86,18 +53,31 @@ User.prototype.println = function (msg) {
 function User(conn) {
     this.conn = conn;
     this.modes = [modes.base];
+    this.modes = this.modes.concat(config.defaultModes);
 }
 
 var modes = {
     base: {
         load: function () {},
         parse: function (user, input) {
-            input = chomp(input);
-            if (input === "time") {
-                user.println(new Date().toLocaleTimeString());
-            } else {
-                user.println("?");
+            input = util.chomp(input);
+
+            // Possibly load a new mode
+            for (mode in config.userModes) {
+                if (input === mode) {
+                    user.addMode(mode);
+                    return 1;
+                }
             }
+
+            // Builtins
+            switch (input) {
+            case "time":
+                user.println(new Date().toLocaleTimeString());
+                return 1;
+            }
+
+            user.println("?");
             return 1;
         }
     },
@@ -108,7 +88,7 @@ var modes = {
         },
 
         parse: function (user, input) {
-            var name = chomp(input);
+            var name = util.chomp(input);
             if (! /^[A-Za-z0-9]+[A-Za-z0-9_]*$/.test(name)) {
                 user.println("Name may contain only letters, numbers and a non-leading underscore")
                 user.print("User Name: ");
@@ -120,38 +100,15 @@ var modes = {
                 return 1;
             }
             user.name = name;
-            console.log(logID(user) + ' connected');
+            console.log(util.logID(user) + ' connected');
             user.addMode(modes.talk);
             user.println("Welcome to " + config.talker.name + ", " + user.name);
             return -1;
         }
-    },
-
-    talk: {
-        load: function () {},
-
-        parse: function (user, input) {
-            input = chomp(input);
-            modes.talk.say(user, input);
-            return 1;
-        },
-
-        say: function (user, msg) {
-            var out = user.name + ': ' + msg;
-            wall(out);
-        }
     }
 };
 
-
-
-function wall(msg) {
-    var other;
-    var ul = users.all();
-    for (other in ul) {
-        ul[other].println(msg);
-    }
-}
+modes.talk = require('talk.js');
 
 function dataHandler (input) {
     var conn = this;
@@ -181,9 +138,6 @@ function dataHandler (input) {
     throw new Error("No mode would handle the user input");
 }
 
-function logID (user) {
-    return user.name + '@' + user.conn.remoteAddress + ":" + user.conn.remotePort;
-}
 
 function endStream() {
     this.end();
@@ -192,7 +146,7 @@ function endStream() {
 function removeClient() {
     var conn = this;
     var user = users.forConn(conn);
-    console.log("Disconnected: " + logID(user));
+    console.log("Disconnected: " + util.logID(user));
     users.remove(conn);
 }
 
