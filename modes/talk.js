@@ -3,6 +3,7 @@ var util = require('util.js');
 /* Talk mode.
  * This is the main mode.
  */
+exports.name = "Talk Mode";
 
 /* Given a string, look for a user name at the start. Return this as
  * target and the rest of the message after space as rest. Return null*/
@@ -16,6 +17,12 @@ function parseTarget(s) {
     return {target: caps[1],
             rest:   caps[2]};
 }
+
+exports.help = {
+    say: "Send a message to all users",
+    tell: "Send private message:\n\ttell <user> <message>",
+    emote: "Do something, e.g. emote jumps"
+};
 
 /* Message to all users */
 function say (user, msg) {

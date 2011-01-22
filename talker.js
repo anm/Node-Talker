@@ -48,7 +48,7 @@ User.prototype.print = function (msg) {
     this.conn.write(msg);
 };
 User.prototype.err = function (msg) {
-    this.print("> " + msg);
+    this.println("> " + msg);
 };
 User.prototype.println = function (msg) {
     this.conn.write(msg + "\n");
@@ -61,6 +61,10 @@ function User(conn) {
 
 var modes = {
     base: {
+        name: "Base",
+        help: {time: "Show the current talker time",
+               "help, h, ?": "This command"},
+
         load: function () {},
         parse: function (user, input) {
             input = util.chomp(input);
@@ -80,7 +84,21 @@ var modes = {
                 return 1;
             }
 
-            user.println("?");
+            // Help
+            if (input === "help" || input === "?" || input === "h") {
+                var help = "";
+                for (i = user.modes.length - 1; i >= 0; --i) {
+                    help += "\n" + user.modes[i].name + " Commands\n";
+                    help += util.thinLine();
+                    for (cmd in user.modes[i].help) {
+                        help += cmd + ": " + user.modes[i].help[cmd] + "\n";
+                    }
+                }
+                user.println(help);
+                return 1;
+            }
+
+            user.println("? (h for help)");
             return 1;
         }
     },
