@@ -85,10 +85,23 @@ User.prototype.println = function (msg) {
 };
 function User(conn) {
     this.conn = conn;
-    this.modes = [];
+    this.modes = [modes.base];
 }
 
 var modes = {
+    base: {
+        load: function () {},
+        parse: function (user, input) {
+            input = chomp(input);
+            if (input === "time") {
+                user.println(new Date().toLocaleTimeString());
+            } else {
+                user.println("?");
+            }
+            return 1;
+        }
+    },
+
     login: {
         load: function (user) {
             user.print("User Name: ");
