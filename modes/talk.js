@@ -28,6 +28,11 @@ function tell (user, target, msg) {
     target.println(out);
 }
 
+function emote (user, msg) {
+    var out = "*" + user.name + " " + msg;
+    util.wall(out);
+}
+
 function load () {}
 
 function parse (user, input) {
@@ -57,6 +62,9 @@ function parse (user, input) {
         } else {
             user.err("tell user message");
         }
+        return 1;
+    case "emote":
+        emote(user, args);
         return 1;
     }
     return 0;
