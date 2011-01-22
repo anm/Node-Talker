@@ -173,6 +173,7 @@ function endStream() {
 
 function removeClient() {
     var conn = this;
+    var user = users.forConn(conn);
     console.log("Disconnected: " + logID(user));
     users.remove(conn);
 }
