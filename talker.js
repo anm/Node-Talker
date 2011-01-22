@@ -109,7 +109,7 @@ var modes = {
 
         parse: function (user, input) {
             var name = chomp(input);
-            if (! /^[A-Za-z0-9]+[A-Za-z0-9_]+$/.test(name)) {
+            if (! /^[A-Za-z0-9]+[A-Za-z0-9_]*$/.test(name)) {
                 user.println("Name may contain only letters, numbers and a non-leading underscore")
                 user.print("User Name: ");
                 return 1;
