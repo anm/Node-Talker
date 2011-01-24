@@ -188,13 +188,7 @@ var server = net.createServer(function (client) {
 
     client.on('data', dataHandler);
     client.on('close', removeClient);
-    client.on('end', endStream);
-    // timeout event to handle as well
 });
-
-function endStream() {
-    this.end();
-}
 
 function removeClient() {
     var conn = this;
