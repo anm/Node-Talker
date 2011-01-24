@@ -7,21 +7,8 @@ var net = require('net');
 
 global.users = new UsersModule.Users();
 
-var config = {
-    talker: {name: "Node"},
-    listen: {host: undefined, // undefined to listen on all addresses
-             port: 5555
-            },
-
-    /* Modes that will be loaded for every user on login */
-    defaultModes: [],
-
-    /* Modes which may be started by the user. The key is the command
-     * to start the mode. */
-    userModes: {
-        //fortune: require('modes/fortune.js')
-    }
-};
+var conf = require("./config.js");
+global.config = conf.config;
 
 var server = net.createServer(function (client) {
     // Client is a Stream object
