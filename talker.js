@@ -65,6 +65,7 @@ var modes = {
         help: {
             who:          "Show online users",
             time:         "Show the current talker time",
+            logout:       "Disconnect",
             "help, h, ?": "This command"
         },
 
@@ -89,6 +90,10 @@ var modes = {
                 user.println("Online Users");
                 user.print(util.thinLine());
                 user.println(users.all().map(function (u) {return u.name}).join(" "));
+                return 1;
+            case "logout":
+                user.println(config.messages.logout);
+                user.conn.end();
                 return 1;
             }
 
