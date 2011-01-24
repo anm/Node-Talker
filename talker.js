@@ -62,8 +62,12 @@ function User(conn) {
 var modes = {
     base: {
         name: "Base",
-        help: {time: "Show the current talker time",
-               "help, h, ?": "This command"},
+
+        help: {
+            who:          "Show online users",
+            time:         "Show the current talker time",
+            "help, h, ?": "This command"
+        },
 
         load: function () {},
         parse: function (user, input) {
@@ -81,6 +85,11 @@ var modes = {
             switch (input) {
             case "time":
                 user.println(new Date().toLocaleTimeString());
+                return 1;
+            case "who":
+                user.println("Online Users");
+                user.print(util.thinLine());
+                user.println(users.all().map(function (u) {return u.name}).join(" "));
                 return 1;
             }
 
