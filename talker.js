@@ -1,3 +1,5 @@
+/* This is the main server program */
+
 require.paths.push('lib');
 require.paths.push('modes');
 
@@ -5,27 +7,11 @@ var util = require('util.js');
 var UsersModule = require('Users.js');
 var net = require('net');
 
+/* Users handles the collection of all users */
 global.users = new UsersModule.Users();
 
 var conf = require("./config.js");
 global.config = conf.config;
-
-var server = net.createServer(function (client) {
-    // Client is a Stream object
-
-    // Decode the data Buffer provided by the data event to a utf8
-    // string
-    client.setEncoding('utf8');
-
-    var user = new User(client);
-    user.addMode(modes.login);
-    users.add(user);
-
-    client.on('data', dataHandler);
-    client.on('close', removeClient);
-    client.on('end', endStream);
-    // timeout event to handle as well
-});
 
 User.prototype.addMode = function (mode) {
     this.modes.push(mode);
@@ -46,6 +32,32 @@ function User(conn) {
     this.modes = this.modes.concat(config.defaultModes);
 }
 
+/* Modes are what handle user input and dictate the behaviour of the
+ * talker. They are intended to mostly be modes in the user interface
+ * design sense. For example, you may have a normal talking mode and a
+ * separate game or news reading mode where the commands are
+ * different. Users have a mode stack. The top mode processes input
+ * first. It can then hand off to the next mode down the stack if it
+ * does not recognise the command.
+ *
+ * The load function is called when a mode is added to a users stack.
+ * parse is the main function to handle the input. Modes also have a
+ * name and help on their commands. See the base mode for an example.
+ * 
+ * The base mode is installed for every user on creation and could be
+ * used to add global commands, although it is probably best to keep
+ * it small. It handles the loading of new modes when the mode name is
+ * used as a command.
+ *
+ * Return codes:
+ * 1: Command handled, finish handling input.
+ * 0: Defer to next mode.
+ * -1: Finished, remove mode from stack.
+ */
+
+/* Here are defined some builtin modes. Others may be loaded from
+ * files stored in the modes directory. This is achieved in the config
+ * file. */
 var modes = {
     base: {
         name: "Base",
@@ -127,6 +139,14 @@ var modes = {
 
 modes.talk = require('talk.js');
 
+/* This is the main dispatcher for user input.
+* 
+* It sends the input to the user's current modes for handling. If a
+* mode returns 1, this indictates that the input has been fully dealt
+* with: the operation ends. Return of 0 means the mode could not
+* handle the input and would like to pass it on to the next mode down
+* the list. -1 means the mode is exited: it will be removed from the
+* user's current mode list. */
 function dataHandler (input) {
     var conn = this;
     var user = users.forConn(conn);
@@ -152,9 +172,25 @@ function dataHandler (input) {
         }
     }
 
-    throw new Error("No mode would handle the user input");
+    console.err("No mode would handle the user input");
 }
 
+var server = net.createServer(function (client) {
+    // Client is a Stream object
+
+    // Decode the data Buffer provided by the data event to a utf8
+    // string
+    client.setEncoding('utf8');
+
+    var user = new User(client);
+    user.addMode(modes.login);
+    users.add(user);
+
+    client.on('data', dataHandler);
+    client.on('close', removeClient);
+    client.on('end', endStream);
+    // timeout event to handle as well
+});
 
 function endStream() {
     this.end();
