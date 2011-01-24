@@ -35,7 +35,7 @@ function tell (user, target, msg) {
     if (user === target) {
         out = msg + ", you tell yourself";
     } else {
-        user.name + " tells you: " + msg;
+        out = user.name + " tells you: " + msg;
     }
 
     target.println(out);
