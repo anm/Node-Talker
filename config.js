@@ -9,5 +9,9 @@ exports.config = {
 
     /* Modes which may be started by the user. The key is the command
      * to start the mode. */
-    userModes: {}
+    userModes: {},
+
+    messages : {
+        logout: "Rerouting perception to local reality sensors"
+    }
 };
