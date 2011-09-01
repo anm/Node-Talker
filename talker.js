@@ -180,6 +180,12 @@ function dataHandler (input) {
     console.err("No mode would handle the user input");
 }
 
+function removeClient() {
+    var conn = this;    var user = users.forConn(conn);
+    console.log("Disconnected: " + util.logID(user));
+    users.remove(conn);
+}
+
 var server = net.createServer(function (client) {
     // Client is a Stream object
 
@@ -194,13 +200,6 @@ var server = net.createServer(function (client) {
     client.on('data', dataHandler);
     client.on('close', removeClient);
 });
-
-function removeClient() {
-    var conn = this;
-    var user = users.forConn(conn);
-    console.log("Disconnected: " + util.logID(user));
-    users.remove(conn);
-}
 
 server.on('error', function (e) {console.err(e)});
 
