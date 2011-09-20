@@ -1,10 +1,7 @@
 /* This is the main server program */
 
-require.paths.push('lib');
-require.paths.push('modes');
-
-var util = require('util.js');
-var UsersModule = require('Users.js');
+var util = require('lib/util.js');
+var UsersModule = require('lib/Users.js');
 var net = require('net');
 
 /* Users handles the collection of all users */
@@ -142,7 +139,7 @@ var modes = {
     }
 };
 
-modes.talk = require('talk.js');
+modes.talk = require('modes/talk.js');
 
 /* This is the main dispatcher for user input.
 * 
